@@ -1,0 +1,25 @@
+# AWS Configuration
+AWS_REGION=us-east-2
+AWS_ACCOUNT_ID=zx
+
+# DynamoDB Tables
+TRANSACTIONS_TABLE=FraudDetection-Transactions
+ACCOUNTS_TABLE=FraudDetection-Accounts
+
+# SageMaker
+SAGEMAKER_ENDPOINT=fraud-detection-endpoint
+
+# Twilio Configuration
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_FROM_NUMBER=+15551234567
+
+# API Gateway
+API_GATEWAY_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com/prod
+
+# S3 Bucket for deployment
+S3_DEPLOYMENT_BUCKET=your-deployment-bucket
+
+# Fraud Detection Thresholds
+FRAUD_THRESHOLD=0.7
+HIGH_RISK_AMOUNT=1000.0
