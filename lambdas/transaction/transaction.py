@@ -3,6 +3,7 @@ import json
 import boto3
 import uuid
 import datetime
+from decimal import Decimal
 
 
 # boto is the AWS SDK for Python  to interact with dynamo...
@@ -14,7 +15,7 @@ table = db.Table('FraudDetection-Transactions')
 
 def lambda_handler(event, context):
 
-    body = json.loads(event['body'])
+    body = json.loads(event['body'], parse_float=Decimal)
     
     # Generate a unique ID for this transaction
     tx_id = str(uuid.uuid4())

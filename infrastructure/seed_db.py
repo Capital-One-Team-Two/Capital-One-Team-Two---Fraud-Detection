@@ -2,6 +2,7 @@ import boto3
 import json
 from sample_data import ACCOUNTS, SAMPLE_TRANSACTIONS
 import sys
+from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('AccountsTable')
@@ -22,7 +23,10 @@ def seed_transactions_table(table_name='FraudDetection-Transactions'):
     
     print(f"Seeding {table_name}...")
     for transaction in SAMPLE_TRANSACTIONS:
-        table.put_item(Item=transaction)
+        item = json.loads(json.dumps(transaction), parse_float=Decimal)
+        table.put_item(
+            Item=item
+        )
     
     print("Transactions table seeded successfully!")
 
