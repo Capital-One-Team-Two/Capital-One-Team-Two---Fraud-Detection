@@ -1,0 +1,7 @@
+boto3>=1.40
+pandas>=2.3
+numpy>=1.26
+fastapi>=0.116
+aiohttp>=3.12
+twilio>=8.0
+diagrams>=0.23
