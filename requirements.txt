@@ -5,3 +5,6 @@ fastapi>=0.116
 aiohttp>=3.12
 twilio>=8.0
 diagrams>=0.23
+scikit-learn>=1.0,<1.7
+lightgbm>=3.3
+joblib>=1.3

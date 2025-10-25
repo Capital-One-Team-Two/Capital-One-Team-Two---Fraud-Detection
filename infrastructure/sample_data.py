@@ -3,7 +3,7 @@ ACCOUNTS = [
         'user_id': 'user_001',
         'name': 'John Doe',
         'email': 'john.doe@example.com',
-        'phone_number': '+15551234567',
+        'phone_number': '+16504727970',  # Verified phone number
         'created_at': '2024-01-01T00:00:00Z',
         'account_status': 'active'
     },
@@ -11,7 +11,7 @@ ACCOUNTS = [
         'user_id': 'user_002',
         'name': 'Jane Smith',
         'email': 'jane.smith@example.com',
-        'phone_number': '+15559876543',
+        'phone_number': '+16504727970',  # Verified phone number
         'created_at': '2024-01-15T00:00:00Z',
         'account_status': 'active'
     },
@@ -19,7 +19,7 @@ ACCOUNTS = [
         'user_id': 'user_003',
         'name': 'Bob Johnson',
         'email': 'bob.johnson@example.com',
-        'phone_number': '+15555555555',
+        'phone_number': '+16504727970',  # Verified phone number
         'created_at': '2024-02-01T00:00:00Z',
         'account_status': 'active'
     }

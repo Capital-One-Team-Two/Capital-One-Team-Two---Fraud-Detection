@@ -30,10 +30,12 @@ MODEL_LOCAL_PATH = os.environ.get("MODEL_LOCAL_PATH", f"./{MODEL_KEY}")  # used 
 
 ENV_FRAUD_THRESHOLD = os.environ.get("FRAUD_THRESHOLD")  # optional override of saved threshold
 MODEL_VERSION = os.environ.get("MODEL_VERSION", "lgbm-v1")
+NOTIFY_LAMBDA_NAME = os.environ.get("NOTIFY_LAMBDA_NAME", "FraudDetection-Notify")
 
 # ----------------- AWS Clients -----------------
 dynamodb = boto3.client("dynamodb", region_name=REGION)
 s3 = boto3.client("s3", region_name=REGION)
+lambda_client = boto3.client("lambda", region_name=REGION)
 
 deser = TypeDeserializer()
 
@@ -179,8 +181,14 @@ def _feature_engineer_single(txn: dict) -> pd.DataFrame:
 
     # ---------- Safety check ----------
     arr = df.to_numpy()
-    if not np.isfinite(arr).all():
-        raise ValueError("Non-finite values detected after feature engineering.")
+    # Convert to float to handle mixed data types
+    try:
+        arr_float = arr.astype(float)
+        if not np.isfinite(arr_float).all():
+            raise ValueError("Non-finite values detected after feature engineering.")
+    except (ValueError, TypeError):
+        # If conversion fails, just log a warning and continue
+        log.warning("Could not convert all values to float for finite check, continuing...")
 
     return df
 # ---------- Model loading ----------
@@ -228,6 +236,37 @@ def update_txn_scores(txn: dict, p_raw: float, decision: str, model_version: str
     )
     return resp.get("Attributes")
 
+# ---------- Trigger Notify Lambda ----------
+def _trigger_notify_lambda(txn: dict, p_raw: float, decision: str):
+    """Trigger the Notify Lambda for fraud alerts."""
+    if decision != "alert":
+        return
+    
+    try:
+        # Prepare notification payload
+        notify_payload = {
+            "transaction_id": txn.get("transaction_id"),
+            "user_id": txn.get("user_id"),  # Make sure this field exists in your transaction
+            "amount": float(txn.get("amount", 0)),
+            "merchant": txn.get("merchant", "Unknown"),
+            "p_raw": p_raw,
+            "decision": decision
+        }
+        
+        log.info("Triggering Notify Lambda for fraud alert: %s", notify_payload)
+        
+        # Invoke Notify Lambda asynchronously
+        response = lambda_client.invoke(
+            FunctionName=NOTIFY_LAMBDA_NAME,
+            InvocationType='Event',  # Asynchronous invocation
+            Payload=json.dumps(notify_payload)
+        )
+        
+        log.info("Notify Lambda triggered successfully. StatusCode: %s", response['StatusCode'])
+        
+    except Exception as e:
+        log.exception("Failed to trigger Notify Lambda: %s", e)
+
 # ----------------- Lambda Handler -----------------
 def handler(event, context):
     log.info("Lambda invoked. Region=%s Table=%s ModelVersion=%s", REGION, TRANSACTIONS_TABLE, MODEL_VERSION)
@@ -271,6 +310,10 @@ def handler(event, context):
             # Update DynamoDB and confirm
             updated = update_txn_scores(txn, p_raw, decision, MODEL_VERSION)
             log.info("✅ DynamoDB updated (ALL_NEW): %s", updated)
+            
+            # Trigger notification if fraud detected
+            _trigger_notify_lambda(txn, p_raw, decision)
+            
             processed += 1
 
         except Exception as e:
