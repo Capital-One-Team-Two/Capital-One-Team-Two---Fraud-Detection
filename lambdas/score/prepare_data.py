@@ -14,7 +14,7 @@ import joblib
 # =========================
 # Config
 # =========================
-CSV_PATH = '../../infrastructure/fraudTest.csv'  # <-- update path as needed
+CSV_PATH = '../../infrastructure/fraudTrain.csv'  # <-- update path as needed
 
 # Probability calibration can reduce overconfident scores
 CALIBRATE = True           # set False to skip isotonic calibration

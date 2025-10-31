@@ -13,6 +13,12 @@ db = boto3.resource('dynamodb')
 
 table = db.Table('FraudDetection-Transactions')
 
+def decimal_to_float(obj):
+    """Helper function to convert Decimal objects to float for JSON serialization"""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
+
 def lambda_handler(event, context):
 
     body = json.loads(event['body'], parse_float=Decimal)
@@ -36,7 +42,7 @@ def lambda_handler(event, context):
     sns.publish(
         #needs to be replaced with correct sns arn
         TopicArn='arn:aws:sns:REPLACE:ScoreTopic',
-        Message=json.dumps(transaction)
+        Message=json.dumps(transaction, default=decimal_to_float)
     )
     return {'statusCode': 200, 'body': json.dumps(
         {'message': 'Transaction added successfully',

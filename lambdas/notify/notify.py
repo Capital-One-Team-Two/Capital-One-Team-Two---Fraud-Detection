@@ -14,16 +14,18 @@ dynamodb = boto3.resource("dynamodb")
 tx_table = dynamodb.Table("FraudDetection-Transactions")
 acct_table = dynamodb.Table("FraudDetection-Accounts")
 
-# Twilio configuration
+# Twilio configuration (optional for testing)
 TWILIO_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
 TWILIO_FROM = os.environ.get("TWILIO_FROM_NUMBER")
 
-if not all([TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM]):
-    logger.error("Missing Twilio environment variables")
-    raise ValueError("Missing Twilio configuration")
-
-twilio_client = Client(TWILIO_SID, TWILIO_TOKEN)
+# Check if Twilio is configured
+TWILIO_CONFIGURED = all([TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM])
+if TWILIO_CONFIGURED:
+    twilio_client = Client(TWILIO_SID, TWILIO_TOKEN)
+else:
+    logger.warning("Twilio not configured. Running in mock mode.")
+    twilio_client = None
 
 def lambda_handler(event, context):
     """
@@ -89,13 +91,19 @@ def lambda_handler(event, context):
             f"Reply NO to block this transaction."
         )
         
-        # Send SMS
-        logger.info(f"Sending SMS to {phone}")
-        msg = twilio_client.messages.create(
-            to=phone, 
-            from_=TWILIO_FROM, 
-            body=body
-        )
+        # Send SMS (mock mode if Twilio not configured)
+        if TWILIO_CONFIGURED:
+            logger.info(f"Sending SMS to {phone}")
+            msg = twilio_client.messages.create(
+                to=phone, 
+                from_=TWILIO_FROM, 
+                body=body
+            )
+            message_sid = msg.sid
+        else:
+            logger.info(f"📱 MOCK MODE: Would send SMS to {phone}")
+            logger.info(f"   Message: {body[:100]}...")
+            message_sid = "MOCK-" + txn_id
         
         # Update transaction record
         tx_table.update_item(
@@ -103,12 +111,12 @@ def lambda_handler(event, context):
             UpdateExpression="SET notificationSent = :ns, messageSid = :ms, notificationAt = :na",
             ExpressionAttributeValues={
                 ":ns": True,
-                ":ms": msg.sid,
+                ":ms": message_sid,
                 ":na": datetime.utcnow().isoformat()
             }
         )
         
-        logger.info(f"Successfully sent SMS. Message SID: {msg.sid}")
+        logger.info(f"Successfully processed notification. Message SID: {message_sid}")
         
         return {
             "statusCode": 200,

@@ -4,7 +4,7 @@ import pandas as pd
 import joblib
 from sklearn.metrics import accuracy_score, confusion_matrix
 
-CSV_PATH = "../../infrastructure/fraudTrain.csv"   # adjust if needed
+CSV_PATH = "../../infrastructure/fraudTest.csv"   # adjust if needed
 ARTIFACT_PATH = "fraud_lgbm_balanced.pkl"
 RANDOM_STATE = 42
 N_SAMPLES = 10

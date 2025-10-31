@@ -31,7 +31,6 @@ def lambda_handler(event, context):
         
         user_data = response['Item']
         phone_number = user_data.get('phone_number')
-        email = user_data.get('email')
         name = user_data.get('name')
         
         return {
@@ -39,7 +38,6 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'user_id': user_id,
                 'phone_number': phone_number,
-                'email': email,
                 'name': name
             })
         }
