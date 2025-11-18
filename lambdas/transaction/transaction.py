@@ -1,53 +1,54 @@
-#arav
 import json
 import boto3
 import uuid
 import datetime
 from decimal import Decimal
 
-
-# boto is the AWS SDK for Python  to interact with dynamo...
-sns = boto3.client('sns')
-
 db = boto3.resource('dynamodb')
-
 table = db.Table('FraudDetection-Transactions')
 
-def decimal_to_float(obj):
-    """Helper function to convert Decimal objects to float for JSON serialization"""
-    if isinstance(obj, Decimal):
-        return float(obj)
-    raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
+
+def decimal_to_native(x):
+    if isinstance(x, Decimal):
+        if x % 1 == 0:
+            return int(x)
+        return float(x)
+    if isinstance(x, dict):
+        return {k: decimal_to_native(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [decimal_to_native(i) for i in x]
+    return x
+
 
 def lambda_handler(event, context):
 
-    body = json.loads(event['body'], parse_float=Decimal)
-    
-    # Generate a unique ID for this transaction
-    tx_id = str(uuid.uuid4())
+    body_str = event.get("body")
+    if not body_str:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"error": "Missing body"})
+        }
 
-    transaction = {
-        'transaction_id': tx_id,
-        'account_id': body['account_id'],   
-        'amount': body['amount'],           
-        'merchant': body['merchant'],       
-        'timestamp': datetime.datetime.utcnow().isoformat(),  
-        'card_number': None,                                
-    }
+    body = json.loads(body_str, parse_float=Decimal)
 
-    #adding stuff to the db
-    table.put_item(Item=transaction)
+    if "transaction_id" not in body:
+        body["transaction_id"] = str(uuid.uuid4())
 
+    if "timestamp" not in body:
+        body["timestamp"] = datetime.datetime.utcnow().isoformat()
 
-    sns.publish(
-        #needs to be replaced with correct sns arn
-        TopicArn='arn:aws:sns:REPLACE:ScoreTopic',
-        Message=json.dumps(transaction, default=decimal_to_float)
-    )
-    return {'statusCode': 200, 'body': json.dumps(
-        {'message': 'Transaction added successfully',
-            'transaction_id': tx_id
+    table.put_item(Item=body)
+
+    # ---- Remove these fields from return ONLY ----
+    filtered = {k: v for k, v in body.items()
+                if k not in ("p_raw", "decision", "is_fraud")}
+
+    filtered = decimal_to_native(filtered)
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "message": "Transaction created successfully",
+            "transaction": filtered
         })
     }
-
-

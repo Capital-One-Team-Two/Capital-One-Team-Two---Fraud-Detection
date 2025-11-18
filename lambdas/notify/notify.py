@@ -122,7 +122,7 @@ def lambda_handler(event, context):
             "statusCode": 200,
             "body": json.dumps({
                 "ok": True, 
-                "messageSid": msg.sid,
+                "messageSid": message_sid,
                 "phone": phone
             })
         }

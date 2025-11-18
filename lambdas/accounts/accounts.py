@@ -4,8 +4,8 @@ import os
 
 dynamodb = boto3.resource('dynamodb')
 accounts_table = dynamodb.Table(os.environ['ACCOUNTS_TABLE'])
-
 def lambda_handler(event, context):
+    
     try:
         # Extract user_id from event
         # This Lambda is triggered by the Transaction Lambda via DynamoDB Stream
@@ -31,6 +31,7 @@ def lambda_handler(event, context):
         
         user_data = response['Item']
         phone_number = user_data.get('phone_number')
+        email = user_data.get('email')
         name = user_data.get('name')
         
         return {
@@ -38,6 +39,8 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'user_id': user_id,
                 'phone_number': phone_number,
+                'email': email,
+                'last_updated': last_updated,
                 'name': name
             })
         }
