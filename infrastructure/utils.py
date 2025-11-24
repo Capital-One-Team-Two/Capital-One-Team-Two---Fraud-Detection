@@ -11,3 +11,4 @@ def generate_user_id(first, last, cc_num):
     return f"user_{first.lower()}_{last.lower()}_{str(abs(hash(str(cc_num))))[:6]}"
 
 
+

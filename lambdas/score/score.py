@@ -4,15 +4,28 @@ import json
 import logging
 from datetime import datetime, timezone
 
-import numpy as np
-import pandas as pd
 import boto3
-import joblib
-import lightgbm as lgb
 from boto3.dynamodb.types import TypeDeserializer
 from decimal import Decimal
 from boto3.dynamodb.types import TypeSerializer
 from types import SimpleNamespace
+
+# Conditional imports for local model (only needed if not using SageMaker)
+# These will be imported lazily when needed
+_np = None
+_pd = None
+_joblib = None
+_lgb = None
+
+def _import_ml_libraries():
+    """Lazy import of ML libraries - only needed for local model."""
+    global _np, _pd, _joblib, _lgb
+    if _np is None:
+        import numpy as _np
+        import pandas as _pd
+        import joblib as _joblib
+        import lightgbm as _lgb
+    return _np, _pd, _joblib, _lgb
 # ----------------- Logging -----------------
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -24,6 +37,11 @@ if not log.handlers:
 REGION = os.environ.get("AWS_REGION", "us-east-2")
 TRANSACTIONS_TABLE = os.environ.get("TRANSACTIONS_TABLE", "FraudDetection-Transactions")
 
+# SageMaker configuration (optional - if set, will use SageMaker endpoint instead of local model)
+SAGEMAKER_ENDPOINT_NAME = os.environ.get("SAGEMAKER_ENDPOINT_NAME")  # e.g., "fraud-detection-endpoint"
+USE_SAGEMAKER = os.environ.get("USE_SAGEMAKER", "false").lower() == "true"
+
+# Local model configuration (used if SageMaker not configured)
 MODEL_BUCKET = os.environ.get("MODEL_BUCKET")  # if provided, load from S3
 MODEL_KEY = os.environ.get("MODEL_KEY", "fraud_lgbm_balanced.pkl")
 MODEL_LOCAL_PATH = os.environ.get("MODEL_LOCAL_PATH", f"./{MODEL_KEY}")  # used if no bucket
@@ -36,6 +54,12 @@ NOTIFY_LAMBDA_NAME = os.environ.get("NOTIFY_LAMBDA_NAME", "FraudDetection-Notify
 dynamodb = boto3.client("dynamodb", region_name=REGION)
 s3 = boto3.client("s3", region_name=REGION)
 lambda_client = boto3.client("lambda", region_name=REGION)
+
+def get_sagemaker_runtime():
+    """Get or create SageMaker runtime client."""
+    if SAGEMAKER_ENDPOINT_NAME or USE_SAGEMAKER:
+        return boto3.client("sagemaker-runtime", region_name=REGION)
+    return None
 
 deser = TypeDeserializer()
 
@@ -97,7 +121,7 @@ def _build_key_from_txn(txn: dict) -> dict:
     return key
 
 # ---------- Feature engineering (must match training) ----------
-def _sanitize_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _sanitize_columns(df):
     """Make column names JSON-safe for LightGBM and unique."""
     df = df.copy()
     cols = (
@@ -117,7 +141,7 @@ def _sanitize_columns(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = safe
     return df
 
-def _align_to_columns(df: pd.DataFrame, cols: list) -> pd.DataFrame:
+def _align_to_columns(df, cols: list):
     """Ensure df has exactly the specified columns (missing as 0, extras dropped)."""
     missing = [c for c in cols if c not in df.columns]
     if missing:
@@ -131,7 +155,7 @@ def _decimal_to_native(x):
     if isinstance(x, Decimal):
         return float(x)
     return x
-def _feature_engineer_single(txn: dict) -> pd.DataFrame:
+def _feature_engineer_single(txn: dict):
     """
     Apply the SAME preprocessing as training:
       - Convert Decimals to floats
@@ -141,6 +165,9 @@ def _feature_engineer_single(txn: dict) -> pd.DataFrame:
       - Sanitize column names
       - Align to training feature_names
     """
+    # Lazy import - only needed for local model
+    _, pd, _, _ = _import_ml_libraries()
+    
     # Convert Decimals first
     txn = {k: _decimal_to_native(v) for k, v in txn.items()}
     df = pd.DataFrame([txn])
@@ -180,6 +207,7 @@ def _feature_engineer_single(txn: dict) -> pd.DataFrame:
     df = _align_to_columns(df, _FEATURE_NAMES)
 
     # ---------- Safety check ----------
+    np, _, _, _ = _import_ml_libraries()
     arr = df.to_numpy()
     # Convert to float to handle mixed data types
     try:
@@ -191,10 +219,84 @@ def _feature_engineer_single(txn: dict) -> pd.DataFrame:
         log.warning("Could not convert all values to float for finite check, continuing...")
 
     return df
-# ---------- Model loading ----------
+# ---------- SageMaker prediction ----------
+def _predict_with_sagemaker(txn: dict) -> tuple[float, str]:
+    """
+    Call SageMaker endpoint for prediction.
+    
+    Args:
+        txn: Transaction dictionary (raw, before feature engineering)
+        
+    Returns:
+        Tuple of (fraud_probability, decision)
+    """
+    endpoint_name = SAGEMAKER_ENDPOINT_NAME
+    if not endpoint_name:
+        raise ValueError("SAGEMAKER_ENDPOINT_NAME not set, cannot use SageMaker")
+    
+    # Convert Decimal to native types for JSON serialization
+    # DynamoDB returns Decimal types which aren't JSON serializable
+    def convert_decimals(obj):
+        """Recursively convert Decimal to float/int for JSON serialization."""
+        if isinstance(obj, Decimal):
+            return float(obj)
+        elif isinstance(obj, dict):
+            return {k: convert_decimals(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_decimals(item) for item in obj]
+        return obj
+    
+    # Prepare request payload - send raw transaction dict
+    # SageMaker inference.py will do feature engineering
+    txn_serializable = convert_decimals(txn)
+    payload = json.dumps(txn_serializable)
+    
+    sagemaker_client = get_sagemaker_runtime()
+    if not sagemaker_client:
+        raise ValueError("SageMaker runtime client not available")
+    
+    try:
+        log.info("🔹 Calling SageMaker endpoint: %s", endpoint_name)
+        response = sagemaker_client.invoke_endpoint(
+            EndpointName=endpoint_name,
+            ContentType='application/json',
+            Body=payload
+        )
+        
+        # Parse response
+        result_body = response['Body'].read().decode('utf-8')
+        result = json.loads(result_body)
+        
+        fraud_prob = float(result.get('fraud_probability', 0.0))
+        threshold = float(result.get('threshold', 0.5))
+        decision = result.get('decision', 'no_alert')
+        
+        # Use threshold from response (SageMaker has the correct threshold)
+        global _THRESHOLD
+        _THRESHOLD = threshold
+        
+        log.info("🔹 SageMaker prediction: p_raw=%.6f thr=%.4f => decision=%s", 
+                 fraud_prob, threshold, decision)
+        
+        return fraud_prob, decision
+        
+    except Exception as e:
+        log.exception("❌ SageMaker invocation failed: %s", e)
+        raise
+
+# ---------- Model loading (for local model) ----------
 def _load_model_if_needed():
     """Load LightGBM artifact once per container (from S3 or local layer)."""
     global _MODEL, _THRESHOLD, _FEATURE_NAMES
+    
+    # Skip loading if using SageMaker
+    if USE_SAGEMAKER or SAGEMAKER_ENDPOINT_NAME:
+        log.info("Using SageMaker endpoint, skipping local model load")
+        return
+    
+    # Lazy import - only needed for local model
+    _, _, joblib, _ = _import_ml_libraries()
+    
     if _MODEL is not None:
         return
 
@@ -220,21 +322,40 @@ def _load_model_if_needed():
 def update_txn_scores(txn: dict, p_raw: float, decision: str, model_version: str):
     """
     Update the item and return the ALL_NEW record for confirmation logs.
+    IMPORTANT: This UPDATES an existing item - it does NOT create new items.
     """
-    key = _build_key_from_txn(txn)
-    resp = dynamodb.update_item(
-        TableName=TRANSACTIONS_TABLE,
-        Key=key,
-        UpdateExpression="SET p_raw = :p, decision = :d, scored_at = :t, model_version = :m",
-        ExpressionAttributeValues={
-            ":p": {"N": f"{p_raw:.6f}"},
-            ":d": {"S": decision},
-            ":t": {"S": _iso_now()},
-            ":m": {"S": model_version},
-        },
-        ReturnValues="ALL_NEW",
-    )
-    return resp.get("Attributes")
+    try:
+        key = _build_key_from_txn(txn)
+        log.info("🔑 Building update key: %s", key)
+        log.info("🔑 Transaction has fields: %s", list(txn.keys())[:10])  # Log first 10 fields
+        
+        resp = dynamodb.update_item(
+            TableName=TRANSACTIONS_TABLE,
+            Key=key,
+            UpdateExpression="SET p_raw = :p, decision = :d, scored_at = :t, model_version = :m",
+            ExpressionAttributeValues={
+                ":p": {"N": f"{p_raw:.6f}"},
+                ":d": {"S": decision},
+                ":t": {"S": _iso_now()},
+                ":m": {"S": model_version},
+            },
+            ReturnValues="ALL_NEW",
+            # Add condition to ensure item exists - prevents accidental creation behavior
+            ConditionExpression="attribute_exists(transaction_id)",
+        )
+        updated_item = resp.get("Attributes")
+        log.info("✅ Successfully updated existing item with key: %s", key)
+        return updated_item
+    except dynamodb.exceptions.ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code', '')
+        if error_code == 'ConditionalCheckFailedException':
+            log.error("❌ Item does not exist with key: %s. Cannot update non-existent item.", key)
+            log.error("   This means the key doesn't match any existing transaction.")
+            log.error("   Transaction fields: %s", list(txn.keys())[:10])
+            raise ValueError(f"Transaction with key {key} does not exist - cannot update") from e
+        else:
+            log.exception("❌ DynamoDB update failed with error: %s", e)
+            raise
 
 # ---------- Trigger Notify Lambda ----------
 def _trigger_notify_lambda(txn: dict, p_raw: float, decision: str):
@@ -273,7 +394,14 @@ def handler(event, context):
 
     processed = 0
     _get_table_key_schema()       # confirm key schema up front
-    _load_model_if_needed()       # warm model cache
+    
+    # Log which mode we're using
+    if USE_SAGEMAKER or SAGEMAKER_ENDPOINT_NAME:
+        log.info("🎯 Using SageMaker endpoint: %s", SAGEMAKER_ENDPOINT_NAME or "not set")
+    else:
+        log.info("🎯 Using local model (loading if needed)")
+        _load_model_if_needed()   # warm model cache
+    
     log.info("Starting to process %d record(s)...", len(event.get("Records", [])))
 
     for i, rec in enumerate(event.get("Records", []), start=1):
@@ -298,14 +426,20 @@ def handler(event, context):
             log.info("Scoring item (unable to log keys; missing?): %s", list(txn.keys()))
 
         try:
-            # Feature engineering + prediction
-            log.info("🔹 Feature engineering start")
-            X = _feature_engineer_single(txn)
-            log.info("🔹 Feature engineering done (%d features)", X.shape[1])
-
-            p_raw = float(_MODEL.predict_proba(X)[0, 1])
-            decision = "alert" if p_raw >= _THRESHOLD else "no_alert"
-            log.info("🔹 Prediction p_raw=%.6f thr=%.4f => decision=%s", p_raw, _THRESHOLD, decision)
+            # Prediction (either SageMaker or local model)
+            if USE_SAGEMAKER or SAGEMAKER_ENDPOINT_NAME:
+                # Use SageMaker endpoint (does feature engineering in SageMaker)
+                log.info("🔹 Using SageMaker endpoint for prediction")
+                p_raw, decision = _predict_with_sagemaker(txn)
+            else:
+                # Use local model (do feature engineering here)
+                log.info("🔹 Feature engineering start")
+                X = _feature_engineer_single(txn)
+                log.info("🔹 Feature engineering done (%d features)", X.shape[1])
+                
+                p_raw = float(_MODEL.predict_proba(X)[0, 1])
+                decision = "alert" if p_raw >= _THRESHOLD else "no_alert"
+                log.info("🔹 Prediction p_raw=%.6f thr=%.4f => decision=%s", p_raw, _THRESHOLD, decision)
 
             # Update DynamoDB and confirm
             updated = update_txn_scores(txn, p_raw, decision, MODEL_VERSION)
@@ -326,7 +460,11 @@ def score_entire_table(batch_size: int = 100):
     Loop through all transactions in the table, score each one, and update it in place.
     """
     log.info("Starting full-table scoring for table: %s", TRANSACTIONS_TABLE)
-    _load_model_if_needed()
+    
+    # Load model if not using SageMaker
+    if not (USE_SAGEMAKER or SAGEMAKER_ENDPOINT_NAME):
+        _load_model_if_needed()
+    
     _get_table_key_schema()
 
     last_evaluated_key = None
@@ -349,9 +487,13 @@ def score_entire_table(batch_size: int = 100):
         for item in items:
             txn = _from_stream_image(item)
             try:
-                X = _feature_engineer_single(txn)
-                p_raw = float(_MODEL.predict_proba(X)[0, 1])
-                decision = "alert" if p_raw >= _THRESHOLD else "no_alert"
+                if USE_SAGEMAKER or SAGEMAKER_ENDPOINT_NAME:
+                    p_raw, decision = _predict_with_sagemaker(txn)
+                else:
+                    X = _feature_engineer_single(txn)
+                    p_raw = float(_MODEL.predict_proba(X)[0, 1])
+                    decision = "alert" if p_raw >= _THRESHOLD else "no_alert"
+                
                 update_txn_scores(txn, p_raw, decision, MODEL_VERSION)
                 total_processed += 1
                 log.info("✅ Updated txn %s | p_raw=%.4f | decision=%s",
