@@ -425,6 +425,17 @@ def handler(event, context):
         except Exception:
             log.info("Scoring item (unable to log keys; missing?): %s", list(txn.keys()))
 
+        # ⚠️ CRITICAL: Skip items that already have scores to prevent recursive loops
+        # When we update DynamoDB with p_raw, it triggers a MODIFY stream event
+        # Without this check, we'd score it again → update → score again → infinite loop!
+        # Check both the dict keys and values (p_raw could be stored in different formats)
+        has_score = ("p_raw" in txn) or (txn.get("p_raw") is not None)
+        if has_score:
+            log.info("⏭️  Skipping item - already scored (has p_raw). This prevents recursive scoring loops.")
+            log.info("   Event: %s, Transaction ID: %s, p_raw value: %s", ev, txn.get("transaction_id", "unknown"), txn.get("p_raw"))
+            log.info("   To rescore, remove p_raw field from the transaction first.")
+            continue
+
         try:
             # Prediction (either SageMaker or local model)
             if USE_SAGEMAKER or SAGEMAKER_ENDPOINT_NAME:

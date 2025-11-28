@@ -5,10 +5,44 @@ Test script for Twilio SMS functionality
 
 import os
 import json
+from pathlib import Path
 from twilio.rest import Client
+
+def load_env_file(env_path='.env'):
+    """Load variables from .env file."""
+    env_file = Path(env_path)
+    
+    if env_file.exists():
+        print(f"📄 Loading environment variables from {env_path}...")
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and empty lines
+                if not line or line.startswith('#'):
+                    continue
+                # Parse KEY=VALUE
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    # Remove quotes if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    os.environ[key] = value
+        return True
+    return False
 
 def test_twilio_sms():
     """Test sending SMS via Twilio"""
+    
+    # Try to load from .env file first
+    env_loaded = False
+    for env_path in ['.env', '../.env', os.path.join(os.path.dirname(__file__), '.env')]:
+        if load_env_file(env_path):
+            env_loaded = True
+            break
     
     # Get credentials from environment
     account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
@@ -16,26 +50,42 @@ def test_twilio_sms():
     from_number = os.environ.get('TWILIO_FROM_NUMBER')
     to_number = os.environ.get('TEST_PHONE_NUMBER')
     
-    if not all([account_sid, auth_token, from_number, to_number]):
+    # Check which variables are missing
+    missing = []
+    if not account_sid:
+        missing.append("TWILIO_ACCOUNT_SID")
+    if not auth_token:
+        missing.append("TWILIO_AUTH_TOKEN")
+    if not from_number:
+        missing.append("TWILIO_FROM_NUMBER")
+    if not to_number:
+        missing.append("TEST_PHONE_NUMBER")
+    
+    if missing:
         print("❌ Missing environment variables!")
-        print("Please set:")
-        print("  TWILIO_ACCOUNT_SID")
-        print("  TWILIO_AUTH_TOKEN") 
-        print("  TWILIO_FROM_NUMBER")
-        print("  TEST_PHONE_NUMBER")
+        print(f"   Missing: {', '.join(missing)}")
+        print("")
+        if not env_loaded:
+            print("💡 Tip: The script tried to load from .env file but couldn't find it.")
+            print("   Make sure your .env file is in the project root and contains:")
+        else:
+            print("💡 Tip: Add to your .env file:")
+        print("   TWILIO_ACCOUNT_SID=AC...")
+        print("   TWILIO_AUTH_TOKEN=...")
+        print("   TWILIO_FROM_NUMBER=+1...")
+        print("   TEST_PHONE_NUMBER=+1...  # Your personal phone number")
+        print("")
+        print("Or export them manually:")
+        print("   export $(cat .env | grep -v '^#' | xargs)")
         return False
     
     try:
         # Initialize Twilio client
         client = Client(account_sid, auth_token)
         
-        # Create test message
-        message_body = (
-            "🧪 FRAUD DETECTION TEST 🧪\n\n"
-            "This is a test message from your fraud detection system.\n"
-            "If you receive this, Twilio is working correctly!\n\n"
-            "Reply YES to confirm you received this message."
-        )
+        # Create test message (shortened for Twilio trial account limits)
+        # Trial accounts: max 160 characters
+        message_body = "FRAUD TEST: Twilio working! Reply YES."
         
         print(f"📱 Sending test SMS...")
         print(f"   From: {from_number}")

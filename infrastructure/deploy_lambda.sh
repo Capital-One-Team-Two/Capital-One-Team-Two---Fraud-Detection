@@ -27,13 +27,20 @@ echo "📦 Packaging Lambda function..."
 # Copy Lambda code files
 cp *.py "$TEMP_DIR/" 2>/dev/null || echo "   Warning: No .py files found to copy"
 
+# Install dependencies if requirements.txt exists
+if [ -f "requirements.txt" ]; then
+    echo "   📥 Installing dependencies from requirements.txt..."
+    pip install -r requirements.txt -t "$TEMP_DIR" --quiet --disable-pip-version-check
+    echo "   ✅ Dependencies installed"
+fi
+
 # Check if function exists
 if aws lambda get-function --function-name "$LAMBDA_FUNCTION_NAME" --region "$REGION" > /dev/null 2>&1; then
     echo "✅ Lambda function exists, updating code..."
     
     # Create zip file
     cd "$TEMP_DIR"
-    zip -r function.zip . > /dev/null
+    zip -r function.zip . > /dev/null 2>&1
     
     # Update function code
     aws lambda update-function-code \

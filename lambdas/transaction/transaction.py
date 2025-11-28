@@ -3,9 +3,11 @@ import boto3
 import uuid
 import datetime
 from decimal import Decimal
+import os
 
 db = boto3.resource('dynamodb')
 table = db.Table('FraudDetection-Transactions')
+accounts_table = db.Table(os.environ.get('ACCOUNTS_TABLE', 'FraudDetection-Accounts'))
 
 
 def decimal_to_native(x):
@@ -36,6 +38,26 @@ def lambda_handler(event, context):
 
     if "timestamp" not in body:
         body["timestamp"] = datetime.datetime.utcnow().isoformat()
+
+    # Ensure user account exists (for Notify Lambda to find phone number)
+    user_id = body.get("user_id")
+    if user_id:
+        try:
+            # Check if account exists
+            response = accounts_table.get_item(Key={"user_id": user_id})
+            if "Item" not in response:
+                # Use phone number from transaction if available, otherwise use default
+                phone_number = body.get("phone_number") or os.environ.get("DEFAULT_PHONE_NUMBER", "+16504727970")
+                accounts_table.put_item(
+                    Item={
+                        "user_id": user_id,
+                        "phone_number": phone_number,
+                        "created_at": datetime.datetime.utcnow().isoformat()
+                    }
+                )
+        except Exception as e:
+            # Log but don't fail transaction if account creation fails
+            print(f"Warning: Could not ensure account exists for {user_id}: {e}")
 
     table.put_item(Item=body)
 

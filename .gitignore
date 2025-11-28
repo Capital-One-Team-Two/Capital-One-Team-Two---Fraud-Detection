@@ -45,6 +45,7 @@ Thumbs.db
 # Model files
 *.pkl
 *.joblib
+*.tar.gz
 model/
 
 # Logs

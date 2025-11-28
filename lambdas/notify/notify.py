@@ -80,16 +80,57 @@ def lambda_handler(event, context):
                 "body": json.dumps({"error": "No phone number found for user"})
             }
         
-        # Create SMS message
+        # ⚠️ CRITICAL: Check if notification already sent to prevent duplicates
+        tx_resp = tx_table.get_item(Key={"transaction_id": txn_id})
+        if "Item" in tx_resp:
+            existing_notification = tx_resp["Item"].get("notificationSent", False)
+            if existing_notification:
+                logger.info(f"⏭️  Notification already sent for transaction {txn_id}. Skipping duplicate.")
+                return {
+                    "statusCode": 200,
+                    "body": json.dumps({
+                        "ok": True,
+                        "message": "Notification already sent",
+                        "skipped": True
+                    })
+                }
+        
+        # Clean up merchant name (remove common prefixes)
+        merchant_clean = merchant
+        if merchant_clean.startswith("fraud_"):
+            merchant_clean = merchant_clean[6:]  # Remove "fraud_" prefix
+        # Clean up other common prefixes
+        merchant_clean = merchant_clean.replace("_", " ").strip()
+        
+        # Format merchant name (limit length but be smarter about it)
+        if len(merchant_clean) > 20:
+            merchant_clean = merchant_clean[:20].rsplit(" ", 1)[0]  # Cut at word boundary
+        
+        # Create well-formatted SMS message
+        # Trial accounts: max 160 chars per segment
+        risk_pct = int(p_raw * 100)
         body = (
-            f"🚨 FRAUD ALERT 🚨\n\n"
-            f"Transaction ID: {txn_id}\n"
+            f"🚨 FRAUD ALERT 🚨\n"
             f"Amount: ${amount:.2f}\n"
-            f"Merchant: {merchant}\n"
-            f"Risk Score: {p_raw:.2f}\n\n"
-            f"Reply YES if you made this transaction.\n"
-            f"Reply NO to block this transaction."
+            f"Merchant: {merchant_clean}\n"
+            f"Risk: {risk_pct}%\n"
+            f"Txn: {txn_id[-8:]}\n"
+            f"Reply YES or NO"
         )
+        
+        # Ensure message is under 160 characters
+        if len(body) > 160:
+            # Shorter version if needed
+            body = (
+                f"🚨 FRAUD ALERT\n"
+                f"${amount:.2f} at {merchant_clean[:15]}\n"
+                f"Risk: {risk_pct}%\n"
+                f"Reply YES/NO"
+            )
+        
+        # Final safety check
+        if len(body) > 160:
+            body = f"FRAUD: ${amount:.2f} {merchant_clean[:12]}\nRisk: {risk_pct}%\nReply YES/NO"
         
         # Send SMS (mock mode if Twilio not configured)
         if TWILIO_CONFIGURED:
@@ -105,18 +146,23 @@ def lambda_handler(event, context):
             logger.info(f"   Message: {body[:100]}...")
             message_sid = "MOCK-" + txn_id
         
-        # Update transaction record
-        tx_table.update_item(
-            Key={"transaction_id": txn_id},
-            UpdateExpression="SET notificationSent = :ns, messageSid = :ms, notificationAt = :na",
-            ExpressionAttributeValues={
-                ":ns": True,
-                ":ms": message_sid,
-                ":na": datetime.utcnow().isoformat()
-            }
-        )
+        # Update transaction record (with error handling)
+        try:
+            tx_table.update_item(
+                Key={"transaction_id": txn_id},
+                UpdateExpression="SET notificationSent = :ns, messageSid = :ms, notificationAt = :na",
+                ExpressionAttributeValues={
+                    ":ns": True,
+                    ":ms": message_sid,
+                    ":na": datetime.utcnow().isoformat()
+                }
+            )
+            logger.info(f"✅ Successfully updated transaction record with notification status")
+        except Exception as db_error:
+            logger.warning(f"⚠️  Failed to update DynamoDB (but SMS was sent): {db_error}")
+            # Don't fail the whole Lambda if DynamoDB update fails - SMS was already sent
         
-        logger.info(f"Successfully processed notification. Message SID: {message_sid}")
+        logger.info(f"✅ Successfully processed notification. Message SID: {message_sid}")
         
         return {
             "statusCode": 200,
