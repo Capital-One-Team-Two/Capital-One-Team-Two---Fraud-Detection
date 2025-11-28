@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Explanation | Capital One Fraud Detection</title>
+    <style>
+        :root {
+            --bg: #0e1b2b;
+            --panel: rgba(255, 255, 255, 0.08);
+            --accent: #30d6a0;
+            --text: #e9edf5;
+            --muted: #a4adbd;
+            --radius: 16px;
+        }
+        body { margin: 0; font-family: 'Space Grotesk', 'Segoe UI', sans-serif; color: var(--text); background: var(--bg); }
+        .page { max-width: 980px; margin: 0 auto; padding: 32px 20px 60px; }
+        .panel { background: var(--panel); border-radius: var(--radius); padding: 22px; border: 1px solid rgba(255, 255, 255, 0.08); }
+        h1, h2 { margin-top: 0; letter-spacing: -0.01em; }
+        p { color: var(--muted); line-height: 1.6; }
+        a { color: var(--accent); }
+        ul { color: var(--muted); line-height: 1.6; }
+        .pill { display: inline-block; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.14); color: var(--text); background: rgba(255, 255, 255, 0.05); margin-right: 8px; margin-bottom: 8px; font-size: 13px; }
+        .cta { margin-top: 18px; display: inline-block; padding: 12px 18px; border-radius: 12px; background: linear-gradient(135deg, var(--accent) 0%, #00b777 100%); color: #0b1a26; text-decoration: none; font-weight: 600; }
+        .muted-box { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 14px; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="panel">
+            <h1>Project Explanation</h1>
+            <p>We are UW–Madison students completing a Capstone project in collaboration with Capital One. Our goal is to build a fraud detection experience that combines model-driven risk scoring, clear customer communication, and deployable cloud infrastructure.</p>
+
+            <h2>What this repo contains</h2>
+            <ul>
+                <li>Lambda functions for transaction scoring, Twilio notifications, and consent capture.</li>
+                <li>Customer-facing HTML flows for SMS consent, privacy, and terms.</li>
+                <li>Tests for local model inference and end-to-end messaging.</li>
+                <li>Infrastructure and environment setup to run the stack quickly.</li>
+            </ul>
+
+            <h2>Team focus areas</h2>
+            <div>
+                <span class="pill">Data Science</span>
+                <span class="pill">Applied ML</span>
+                <span class="pill">Serverless</span>
+                <span class="pill">Customer Safety</span>
+            </div>
+
+            <h2>How to explore</h2>
+            <div class="muted-box">
+                <p>- Start with the <a href="index.html">landing page</a> to see the experience and architecture snapshot.</p>
+                <p>- Browse the <a href="https://github.com/Capital-One-Team-Two/Capital-One-Team-Two---Fraud-Detection" target="_blank" rel="noopener">GitHub repo</a> for code, infra, and tests.</p>
+                <p>- Try the <a href="consent-page.html">consent demo</a> to view the customer flow.</p>
+            </div>
+
+            <a class="cta" href="index.html">Back to Landing</a>
+        </div>
+    </div>
+    
+</body>
+</html>
