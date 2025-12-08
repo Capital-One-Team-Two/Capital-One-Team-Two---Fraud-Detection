@@ -1,0 +1,257 @@
+:root {
+  --bg: #0e1b2b;
+  --panel: rgba(255, 255, 255, 0.08);
+  --accent: #30d6a0;
+  --accent-2: #5fb2ff;
+  --text: #e9edf5;
+  --muted: #a4adbd;
+  --card: rgba(8, 15, 26, 0.9);
+  --shadow: 0 20px 60px rgba(0,0,0,0.35);
+  --radius: 18px;
+}
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 15% 20%, #19385e 0, transparent 30%),
+    radial-gradient(circle at 85% 10%, #123244 0, transparent 28%),
+    radial-gradient(circle at 50% 80%, #132540 0, transparent 35%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  width: 100%;            
+  box-sizing: border-box;   
+}
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.data-table {
+  width: 100%; 
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  table-layout: fixed;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* row lines */
+  border-right: 1px solid rgba(255, 255, 255, 0.05);  /* column lines */
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+  border-right: none;
+}
+
+.tx-id-link {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--accent-2, #5fb2ff);
+}
+.tx-id-link:hover {
+  color: #ffffff;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent) 0%, #00b777 100%);
+  color: #071220;
+  box-shadow: 0 10px 25px rgba(48, 214, 160, 0.4);
+}
+
+.btn.secondary {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(9, 18, 30, 0.8);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.45);
+}
+
+.sidebar {
+  width: 240px;
+  background: rgba(2, 8, 18, 0.9);
+  border-right: 1px solid rgba(255,255,255,0.05);
+  padding: 20px;
+}
+
+.sidebar h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: var(--accent);
+}
+
+.sidebar button {
+  width: 100%;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.main {
+  flex: 1;
+  padding: 24px 32px;
+}
+
+/* Table styling */
+.tx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tx-table th,
+.tx-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);  /* line between rows */
+  border-right: 1px solid rgba(255, 255, 255, 0.05);   /* line between columns */
+}
+
+.tx-table th:last-child,
+.tx-table td:last-child {
+  border-right: none;
+}
+
+/* ID as clickable underline text, not button */
+.tx-id-link {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--accent-2, #5fb2ff);
+}
+
+.tx-id-link:hover {
+  color: #ffffff;
+}
+
+/* Modal overlay */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  box-shadow: var(--shadow);
+  max-width: 640px;
+  width: 90%;
+}
+
+/* Simple two-column grid inside modal */
+.tx-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 24px;
+  margin-top: 12px;
+}
+
+.tx-detail-grid strong {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.tx-detail-grid div {
+  word-break: break-word;
+}
+
+/* Fullscreen center for login */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* Card that matches the dashboard look */
+.login-card {
+  background: var(--card);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+  padding: 28px 32px 32px;
+  max-width: 420px;
+  width: 100%;
+}
+
+/* Typography */
+.login-title {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+}
+
+.login-subtitle {
+  margin: 0 0 20px 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Form elements */
+.login-label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.login-input {
+  width: 100%;
+  display: block;
+  margin-top: 6px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(3, 10, 20, 0.9);
+  color: var(--text);
+  outline: none;
+  box-sizing: border-box;
+}
+
+
+.login-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(48, 214, 160, 0.5);
+}
+
+.login-error {
+  color: #ff8a8a;
+  font-size: 0.8rem;
+  margin: 0 0 8px 0;
+}
+
+/* Make the login button span full width */
+.login-button {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+}

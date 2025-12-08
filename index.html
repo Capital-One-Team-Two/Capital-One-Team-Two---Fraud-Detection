@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capital One Fraud Detection | Capstone Landing</title>
+    <style>
+        :root {
+            --bg: #0e1b2b;
+            --panel: rgba(255, 255, 255, 0.08);
+            --accent: #30d6a0;
+            --accent-2: #5fb2ff;
+            --text: #e9edf5;
+            --muted: #a4adbd;
+            --card: rgba(8, 15, 26, 0.8);
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at 15% 20%, #19385e 0, transparent 30%), 
+                        radial-gradient(circle at 85% 10%, #123244 0, transparent 28%),
+                        radial-gradient(circle at 50% 80%, #132540 0, transparent 35%),
+                        var(--bg);
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        header {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 28px;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+
+        .hero {
+            padding: 26px;
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 32px;
+            letter-spacing: -0.02em;
+        }
+
+        p.lead {
+            color: var(--muted);
+            margin: 0 0 24px;
+            line-height: 1.6;
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        a.btn {
+            text-decoration: none;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        a.btn.primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #00b777 100%);
+            color: #0b1a26;
+            box-shadow: 0 10px 30px rgba(48, 214, 160, 0.35);
+        }
+
+        a.btn.secondary {
+            background: transparent;
+            border-color: rgba(255, 255, 255, 0.14);
+            color: var(--text);
+        }
+
+        a.btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 22px;
+            box-shadow: var(--shadow);
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 18px;
+        }
+
+        .card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+            margin-bottom: 40px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(48, 214, 160, 0.12);
+            color: var(--accent);
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            margin-bottom: 12px;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .diagram {
+            padding: 18px;
+            background: var(--panel);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: var(--shadow);
+        }
+
+        .diagram img {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #0b1625;
+        }
+
+        footer {
+            margin-top: 32px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 640px) {
+            h1 { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="hero">
+                <div class="tag">Capital One | Fraud Detection</div>
+                <h1>Fraud alerts, verification, and insights in one streamlined flow.</h1>
+                <p class="lead">
+                    End-to-end fraud detection with SMS consent flows, Lambda-backed risk scoring,
+                    and transparent customer notifications. Built by UW–Madison students as a Capstone
+                    collaboration with Capital One. Explore the architecture, try the demo, and dive into
+                    the full project explanation tied directly to this repository.
+                </p>
+                <div class="cta-row">
+                    <a class="btn primary" href="consent-page.html">Try the Consent Demo</a>
+                    <a class="btn secondary" href="explanation.html">HTML Overview</a>
+                    <a class="btn secondary" href="https://github.com/Capital-One-Team-Two/Capital-One-Team-Two---Fraud-Detection" target="_blank" rel="noopener">View Repo on GitHub</a>
+                    <a class="btn secondary" href="privacy_policy.html">Privacy & Terms</a>
+                </div>
+            </div>
+        </header>
+
+        <section class="grid">
+            <div class="card">
+                <h3>Risk Scoring</h3>
+                <p>Evaluate transactions with model-based fraud scoring and surface alerts within seconds.</p>
+            </div>
+            <div class="card">
+                <h3>Customer-first Comms</h3>
+                <p>SMS consent, verification steps, and opt-out handling built into the flow.</p>
+            </div>
+            <div class="card">
+                <h3>Deployable Stack</h3>
+                <p>Infrastructure, environment setup, and tests aligned for cloud rollout.</p>
+            </div>
+            <div class="card">
+                <h3>Capstone Context</h3>
+                <p>Developed for the UW–Madison Capstone program in partnership with Capital One, focusing on safe, transparent fraud mitigation.</p>
+            </div>
+            <div class="card">
+                <h3>Built in this Repo</h3>
+                <p>Lambda functions for scoring and Twilio notifications, consent and policy pages, and automated tests (local model + end-to-end messaging) all live here.</p>
+            </div>
+        </section>
+
+        <section class="grid">
+            <div class="card">
+                <div class="tag">Meet the Team</div>
+                <h3>UW–Madison Students</h3>
+                <p>We are a UW–Madison Capstone team exploring fraud risk, real-time messaging, and cloud-native delivery with Capital One mentors.</p>
+                <div style="margin-top:12px;">
+                    <span class="pill">Data Science</span>
+                    <span class="pill">Applied ML</span>
+                    <span class="pill">Serverless</span>
+                    <span class="pill">Customer Safety</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="tag">How to Explore</div>
+                <h3>Choose your path</h3>
+                <p>- Walk through the HTML overview for a guided explanation.</p>
+                <p>- Browse the GitHub repo to see code, infra, and tests.</p>
+                <p>- Open the consent demo to see the customer-facing flow.</p>
+            </div>
+            <div class="card">
+                <div class="tag">Next Steps</div>
+                <h3>Where this can go</h3>
+                <p>Integrate the model output with case management, expand verification channels, and tune thresholds using production telemetry.</p>
+            </div>
+        </section>
+
+        <section class="diagram">
+            <div class="tag">Architecture Snapshot</div>
+            <img src="Architecure.png" alt="Fraud detection system architecture">
+        </section>
+
+        
+    </div>
+</body>
+
+</html>
