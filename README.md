@@ -21,7 +21,7 @@ The project contains both backend services (Python + AWS) and a frontend dashboa
    pip install -r requirements.txt
 
    </span><span># Front‑end dependencies (admin dashboard)</span><span>
-   </span><span>cd</span><span> lambdas/admin/fraud-admin-dashboard
+   </span><span>cd</span><span> fraud-admin-dashboard
    npm install
    </span></span></code></div></div></pre>
 2. **Configure AWS credentials**
@@ -37,9 +37,9 @@ The project contains both backend services (Python + AWS) and a frontend dashboa
 
    This creates API endpoints such as `POST /transaction`, `GET /transaction/{id}`, `GET /admin/accounts` and ties them to Lambda functions defined in the `lambdas` folder.
 4. **Run the admin dashboard locally**
-   The dashboard lives in `lambdas/admin/fraud-admin-dashboard`, implemented with Create React App and Tailwind CSS.  It reads the API Gateway URLs from environment variables in `.env`.  To run locally:
+   The dashboard lives in `/fraud-admin-dashboard`, implemented with Create React App and Tailwind CSS.  It reads the API Gateway URLs from environment variables in `.env`.  To run locally:
 
-   <pre class="overflow-visible! px-0!" data-start="2361" data-end="2513"><div class="contain-inline-size rounded-2xl corner-superellipse/1.1 relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>cd</span><span> lambdas/admin/fraud-admin-dashboard
+   <pre class="overflow-visible! px-0!" data-start="2361" data-end="2513"><div class="contain-inline-size rounded-2xl corner-superellipse/1.1 relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>cd</span><span> fraud-admin-dashboard
    </span><span># edit .env to set REACT_APP_API_BASE_URL to your deployed API Gateway base URL</span><span>
    npm start
    </span></span></code></div></div></pre>
@@ -61,7 +61,7 @@ The project contains both backend services (Python + AWS) and a frontend dashboa
     * `list_accounts.py` – Lists all accounts.
     * `get_account.py` and `update_account.py` – Retrieve or update account records (name, phone number, etc.).
   * **`user_response/`** – Processes a user’s SMS response to confirm whether a transaction is fraudulent or legitimate.  This updates the transaction record accordingly.
-* **`lambdas/admin/fraud-admin-dashboard/`** – Front‑end React app for internal administrators.  It shows a list of transactions, allows resending SMS messages, displays account information, and includes basic metrics. Amplify and AWS API Gateway can be used to make authenticated requests.  Tailwind CSS provides styling.
+* **`fraud-admin-dashboard/`** – Front‑end React app for internal administrators.  It shows a list of transactions, allows resending SMS messages, displays account information, and includes basic metrics. Amplify and AWS API Gateway can be used to make authenticated requests.  Tailwind CSS provides styling.
 * **Testing and deployment scripts** – `infrastructure/test_end_to_end_pipeline.py` runs an end‑to‑end test by seeding a transaction, invoking the scoring and notification functions, and verifying updates in DynamoDB.  Bash scripts like `deploy.sh`, `cleanup.sh` and `seed_db.py` facilitate deploying resources and seeding the database with sample data.
 
 ## What Works
