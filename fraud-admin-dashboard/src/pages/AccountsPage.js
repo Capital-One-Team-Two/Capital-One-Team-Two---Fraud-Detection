@@ -85,10 +85,10 @@ export default function AccountsPage() {
               {accounts.map((a, idx) => (
                 <tr key={a.user_id || idx}>
                   <td>{idx + 1}</td>
-                  <td>{a.user_id}</td>           {/* plain text, not clickable */}
-                  <td>{a.name}</td>
+                  <td className="accounts-table-userid" title={a.user_id}>{a.user_id}</td>           {/* plain text, not clickable */}
+                  <td className="accounts-table-name" title={a.name}>{a.name}</td>
                   <td>{a.phone_number}</td>
-                  <td>{a.created_at}</td>
+                  <td className="accounts-table-created">{a.created_at}</td>
                   <td>{a.account_status}</td>
                   <td>
                     <button

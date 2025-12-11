@@ -2,23 +2,12 @@
 
 This guide will help you set up the complete fraud detection pipeline with local ML model and Twilio notifications.
 
-## 🏗️ Architecture Overview
-
-```
-User Transaction → API Gateway → Transaction Lambda → DynamoDB
-                                                      ↓
-DynamoDB Stream → Score Lambda (Local Model) → Notify Lambda → Twilio → User
-                                                      ↓
-User Response → API Gateway → Webhook Lambda → DynamoDB
-```
-
 ## 📋 Prerequisites
 
 1. **AWS Account** with appropriate permissions
 2. **Twilio Account** with SMS capabilities
-3. **Python 3.9+** environment
+3. **Python 3.8+** environment
 4. **AWS CLI** configured
-5. **Terraform** (optional, for infrastructure)
 
 ## 🚀 Step-by-Step Setup
 
@@ -38,7 +27,7 @@ pip install -r requirements.txt
 Set up your AWS environment variables:
 
 ```bash
-export AWS_REGION="us-east-2"
+export AWS_REGION="your-desired-aws-region"
 export SAGEMAKER_ROLE_ARN="arn:aws:iam::YOUR_ACCOUNT:role/SageMakerExecutionRole"
 export S3_BUCKET_NAME="your-fraud-detection-models"
 export TRANSACTIONS_TABLE="FraudDetection-Transactions"
@@ -49,18 +38,20 @@ export ACCOUNTS_TABLE="FraudDetection-Accounts"
 
 1. **Create Twilio Account**: Sign up at [twilio.com](https://twilio.com)
 2. **Get Credentials**:
+
    ```bash
    export TWILIO_ACCOUNT_SID="your_account_sid"
    export TWILIO_AUTH_TOKEN="your_auth_token"
    export TWILIO_FROM_NUMBER="+1234567890"  # Your Twilio phone number
    ```
-
 3. **Configure Webhook URL**:
+
    - In Twilio Console, set webhook URL to: `https://your-api-gateway-url/webhook/twilio`
 
 ### 4. Train and Deploy ML Model
 
 #### Option A: Use Existing Model
+
 If you have a trained model file (`fraud_lgbm_balanced.pkl`):
 
 ```bash
@@ -70,6 +61,7 @@ python deploy_sagemaker.py
 ```
 
 #### Option B: Train New Model
+
 ```bash
 # Train the model
 cd lambdas/score
@@ -101,9 +93,11 @@ aws lambda create-function \
 # - lambdas/webhook/twilio_webhook.py → FraudDetection-Webhook
 # - lambdas/accounts/accounts.py → FraudDetection-Accounts
 # - lambdas/user_response/user_response.py → FraudDetection-UserResponse
+# - lambdas/admin/*.py → FraudDetection-AdminFunctions (these are only used for admin dashboard setup, omit if unnecessary)
 ```
 
-#### Using Terraform (Recommended):
+#### Using Terraform (An alternative):
+
 ```bash
 # Create terraform configuration
 terraform init
@@ -166,9 +160,10 @@ cd infrastructure
 python seed_db.py all
 ```
 
-### 10. Test the System
+### 10. Testing the System
 
 #### Test Transaction Flow:
+
 ```bash
 # Create a test transaction
 curl -X POST https://your-api-gateway-url/transaction \
@@ -182,6 +177,7 @@ curl -X POST https://your-api-gateway-url/transaction \
 ```
 
 #### Check Transaction Status:
+
 ```bash
 # Get transaction status
 curl https://your-api-gateway-url/transaction/txn_123
@@ -192,6 +188,7 @@ curl https://your-api-gateway-url/transaction/txn_123
 ### Environment Variables for Lambda Functions:
 
 **Score Lambda:**
+
 ```bash
 SAGEMAKER_ENDPOINT_NAME=fraud-detection-endpoint
 FRAUD_THRESHOLD=0.5
@@ -200,13 +197,15 @@ NOTIFY_LAMBDA_NAME=FraudDetection-Notify
 ```
 
 **Notify Lambda:**
+
 ```bash
 TWILIO_ACCOUNT_SID=your_sid
 TWILIO_AUTH_TOKEN=your_token
-TWILIO_FROM_NUMBER=+1234567890
+TWILIO_FROM_NUMBER=+your_desired_phone_number
 ```
 
 **Webhook Lambda:**
+
 ```bash
 TRANSACTIONS_TABLE=FraudDetection-Transactions
 ```
@@ -214,27 +213,33 @@ TRANSACTIONS_TABLE=FraudDetection-Transactions
 ## 🧪 Testing
 
 ### 1. Test Fraud Detection
+
 Create transactions with high amounts or suspicious merchants to trigger fraud alerts.
 
 ### 2. Test SMS Notifications
+
 Check that SMS messages are sent when fraud is detected.
 
 ### 3. Test User Responses
+
 Reply to SMS messages and verify responses are recorded in DynamoDB.
 
 ## 📊 Monitoring
 
 ### CloudWatch Logs
+
 - Monitor Lambda function logs
 - Set up alarms for errors
 - Track performance metrics
 
 ### DynamoDB Metrics
+
 - Monitor read/write capacity
 - Track throttling events
 - Monitor item count
 
 ### SageMaker Metrics
+
 - Monitor endpoint health
 - Track inference latency
 - Monitor model performance
@@ -244,21 +249,22 @@ Reply to SMS messages and verify responses are recorded in DynamoDB.
 ### Common Issues:
 
 1. **SageMaker Endpoint Not Responding**
+
    - Check endpoint status in SageMaker console
    - Verify IAM permissions
    - Check CloudWatch logs
-
 2. **Twilio SMS Not Sending**
+
    - Verify Twilio credentials
    - Check phone number format
    - Verify account balance
-
 3. **DynamoDB Stream Not Triggering**
+
    - Check stream configuration
    - Verify Lambda permissions
    - Check event source mapping
-
 4. **Feature Engineering Errors**
+
    - Ensure training and inference use same preprocessing
    - Check for missing columns
    - Verify data types
@@ -289,6 +295,7 @@ Reply to SMS messages and verify responses are recorded in DynamoDB.
 ## 📞 Support
 
 For issues or questions:
+
 1. Check CloudWatch logs
 2. Review this setup guide
 3. Check AWS documentation

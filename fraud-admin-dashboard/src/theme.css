@@ -48,18 +48,21 @@ body {
 }
 
 .data-table {
-  width: 100%; 
+  width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .data-table th,
 .data-table td {
   padding: 10px 12px;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* row lines */
-  border-right: 1px solid rgba(255, 255, 255, 0.05);  /* column lines */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;       /* keep in one line */
+  overflow: hidden;          /* hide overflow */
+  text-overflow: ellipsis;   /* show … when truncated */
 }
 
 .data-table th:last-child,
